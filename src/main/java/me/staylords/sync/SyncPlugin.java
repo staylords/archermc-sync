@@ -1,2 +1,6 @@
-package me.staylords.sync;public class SyncPlugin {
+package me.staylords.sync;
+
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class SyncPlugin extends JavaPlugin {
 }
