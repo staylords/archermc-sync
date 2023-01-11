@@ -1,6 +1,7 @@
 name: Sync
 main: me.staylords.sync.SyncPlugin
-version: ${git.commit.id.abbrev}
+version: ${git.build.version}/(${git.commit.id.abbrev})
+description: 'For further information: ${git.remote.origin.url}'
 load: STARTUP
 authors: [ArcherMC, staylords]
 depend:
