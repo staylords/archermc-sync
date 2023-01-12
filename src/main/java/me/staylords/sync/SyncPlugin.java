@@ -7,6 +7,7 @@ import github.scarsz.discordsrv.api.commands.SlashCommand;
 import github.scarsz.discordsrv.api.commands.SlashCommandProvider;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.MessageBuilder;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.ChannelType;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.MessageHistory;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
@@ -77,8 +78,8 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
                 message.delete().queue();
             });
 
-            Button syncButton = Button.success("sync-account", "Sync");
-            Button unsyncButton = Button.danger("unsync-account", "Unsync");
+            Button syncButton = Button.success("sync-account", "Link");
+            Button unsyncButton = Button.danger("unsync-account", "Unlink");
 
             EmbedBuilder builder = new EmbedBuilder();
             builder
@@ -86,7 +87,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
                     .setTitle(BOT_TITLE)
                     .addField("Hello there!",
                             "In order to **synchronize** your **in-game roles** and be able to access **our " +
-                                    "features**, click the `Sync` button and follow the **procedure**." +
+                                    "features**, click the `Link` button and follow the **procedure**." +
                                     "\n" +
                                     " " +
                                     "\n" +
@@ -94,7 +95,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
                                     "\n" +
                                     " " +
                                     "\n" +
-                                    "If you'd like to **unsync** your account simply click the corresponding button below.",
+                                    "If you'd like to **unlink** your account simply click the corresponding button below.",
                             false)
                     .setThumbnail("https://media.discordapp.net/attachments/560764349690675211/976975445784420452/Archer.png?width=959&height=671")
                     .setImage("https://i.imgur.com/3dCjNA4.jpg")
@@ -118,31 +119,20 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         }
     }
 
-    /**
-     * Quickly recover synchronized players information from java.util.UUID
-     */
-    public static boolean isSynchronized(UUID uuid) {
-        return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsValue(uuid);
-    }
-
-    /**
-     * Quickly recover synchronized players information from discord user id
-     */
-    public static boolean isSynchronized(String userId) {
-        return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsKey(userId);
-    }
-
-    @Override
-    public Set<PluginSlashCommand> getSlashCommands() {
-        return new HashSet<>(Collections.singletonList(
-                new PluginSlashCommand(this, new CommandData("sync", "Link your Minecraft account to our Discord server!")
-                        .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true))
-        ));
-    }
-
     @SlashCommand(path = "sync")
     public void onSyncCommand(SlashCommandEvent event) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        if (SyncPlugin.isLinked(event.getUser().getId())) {
+            event.deferReply().setEphemeral(true).queue();
+            event.getHook().sendMessage("already verified").queue();
+            return;
+        }
+
+        if (event.getChannel().getType() != ChannelType.PRIVATE) {
+            event.deferReply().setEphemeral(true).queue();
+            event.getHook().sendMessage("you can execute this command in private chat").queue();
+            return;
+        }
 
         if (event.getOption("code") == null || Objects.requireNonNull(event.getOption("code")).getAsString().chars().count() != 4) {
             event.deferReply().setEphemeral(true).queue();
@@ -155,11 +145,32 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
             accountManager.link(event.getUser().getId(), accountManager.getLinkingCodes().get(String.valueOf(code)));
             accountManager.save();
             OfflinePlayer player = Bukkit.getOfflinePlayer(accountManager.getUuid(event.getUser().getId()));
-            ((Player) player).sendMessage("u got verified test?");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         event.reply(String.valueOf(code)).queue();
+    }
+
+    @Override
+    public Set<PluginSlashCommand> getSlashCommands() {
+        return new HashSet<>(Collections.singletonList(
+                new PluginSlashCommand(this, new CommandData("sync", "Link your Minecraft account to our Discord server!")
+                        .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true))
+        ));
+    }
+
+    /**
+     * Quickly recover synchronized players information from java.util.UUID
+     */
+    public static boolean isLinked(UUID uuid) {
+        return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsValue(uuid);
+    }
+
+    /**
+     * Quickly recover synchronized players information from discord user id
+     */
+    public static boolean isLinked(String userId) {
+        return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsKey(userId);
     }
 }

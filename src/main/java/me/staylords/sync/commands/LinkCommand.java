@@ -24,32 +24,43 @@ public class LinkCommand extends BaseCommand {
 
         if (player instanceof ConsoleCommandSender) return;
 
-        if (SyncPlugin.isSynchronized(player.getUniqueId())) {
+        if (SyncPlugin.isLinked(player.getUniqueId())) {
             player.sendMessage("§9§m------------------------------------");
-            player.sendMessage("§cHello " + player.getName() + "! Your Minecraft account is already linked with " + returnFancyName(player.getUniqueId()) + ". If you wish to un-link it follow the steps in the #sync channel.");
+            player.sendMessage("§cHello " + player.getName() + "! Your Minecraft account is already linked to " + returnFancyName(player.getUniqueId()) + ". If you wish to unlink it follow the steps in the #sync channel.");
             player.sendMessage("§9§m------------------------------------");
             return;
         }
 
         /*
-        Prevent filling the @getLinkingCodes Map with same UUID's
-        Send the player a warning message
+        We prevent filling github.scarsz.discordsrv.objects.managers.AccountLinkManager.getLinkingCodes Map<String, UUID>
+        with the same UUID so after a little check we remove it and send the player a 'warning' message.
          */
         if (accountManager.getLinkingCodes().containsValue(player.getUniqueId())) {
-            player.sendMessage("§c[§e!§c] Your old code is no longer valid! We're generating a new one!");
+            player.sendMessage("§7§o[Server: Generating a new code for " + player.getName() + "]");
             accountManager.getLinkingCodes().values().remove(player.getUniqueId());
         }
 
-        player.sendMessage("§9§m------------------------------------");
-        player.sendMessage("§c§lArcherMC Synchronization Process");
-        player.sendMessage("");
-        player.sendMessage("§eHello §e§l" + player.getName() + "§e! Here's your 4 digits code: §e§n§l" + accountManager.generateCode(player.getUniqueId()) + "§e. Join discord.gg/archermc and follow the steps in the #sync channel in order to get your Minecraft account linked!");
-        player.sendMessage("§9§m------------------------------------");
+        String[] toMessage = {
+                "§9§m------------------------------------",
+                "§c§lArcherMC Synchronization Process",
+                "§c§l<§e!§c§l> §cDo not share your code with anyone §c§l<§e!§c§l>",
+                "",
+                "§eHello §e§l" + player.getName() + "§e! Here's your 4 digits code: §e§l" + accountManager.generateCode(player.getUniqueId()) + "§e. ",
+                "§eJoin discord.gg/archermc and follow the steps in the #sync channel in order to get your Minecraft account linked!",
+                "§9§m------------------------------------"
+        };
+
+        player.sendMessage(toMessage);
     }
 
+    /**
+     * Clean discord tag if the player is still through the members. Instead, we return its User ID.
+     *
+     * @return fancy discord name
+     */
     private String returnFancyName(UUID uuid) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
-        return Objects.requireNonNull(DiscordUtil.getJda().getUserById(accountManager.getDiscordId(uuid)), accountManager.getDiscordId(uuid)).getAsTag();
+        return DiscordUtil.getJda().getUserById(accountManager.getDiscordId(uuid)) == null ? accountManager.getDiscordId(uuid) : Objects.requireNonNull(DiscordUtil.getJda().getUserById(accountManager.getDiscordId(uuid))).getAsTag();
     }
 
 }
