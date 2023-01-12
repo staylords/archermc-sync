@@ -15,7 +15,7 @@
     </properties>
 
     <build>
-        <finalName>${project.name}</finalName>
+        <finalName>Sync (#${git.commit.id.abbrev}-${git.branch})</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
