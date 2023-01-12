@@ -1,8 +1,6 @@
 name: Sync
 main: me.staylords.sync.SyncPlugin
-version: ${git.build.version}/(${git.commit.id.abbrev})
-description: 'For further information: ${git.remote.origin.url}'
-load: STARTUP
-authors: [ArcherMC, staylords]
+version: '${git.commit.id.abbrev}/${git.branch}'
+author: staylords
 depend:
   - DiscordSRV
