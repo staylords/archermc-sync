@@ -113,7 +113,6 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 .flatMap(channel -> channel.sendMessageEmbeds(builder.build()))
                 .queue();
 
-
         GroupSynchronizationManager synchronizationManager = DiscordSRV.getPlugin().getGroupSynchronizationManager();
 
         Bukkit.getScheduler().runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
