@@ -8,6 +8,7 @@ import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
 import me.staylords.sync.SyncPlugin;
+import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
@@ -40,17 +41,19 @@ public class LinkCommand extends BaseCommand {
             accountManager.getLinkingCodes().values().remove(player.getUniqueId());
         }
 
-        String[] toMessage = {
-                "§9§m------------------------------------",
-                "§c§lArcherMC Synchronization Process",
-                "§c§l<§e!§c§l> §cDo not share your code with anyone §c§l<§e!§c§l>",
-                "",
-                "§eHello §e§l" + player.getName() + "§e! Here's your 4 digits code: §e§l" + accountManager.generateCode(player.getUniqueId()) + "§e. ",
-                "§eJoin discord.gg/archermc and follow the steps in the #sync channel in order to get your Minecraft account linked!",
-                "§9§m------------------------------------"
-        };
+        Bukkit.getScheduler().runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
+            String[] toMessage = {
+                    "§9§m------------------------------------",
+                    "§c§lArcherMC Synchronization Process",
+                    "§c§l<§e!§c§l> §cDo not share your code with anyone §c§l<§e!§c§l>",
+                    "",
+                    "§eHello §e§l" + player.getName() + "§e! Here's your 4 digits code: §e§l" + accountManager.generateCode(player.getUniqueId()) + "§e. ",
+                    "§eJoin discord.gg/archermc and follow the steps in the #sync channel in order to get your Minecraft account linked!",
+                    "§9§m------------------------------------"
+            };
 
-        player.sendMessage(toMessage);
+            player.sendMessage(toMessage);
+        });
     }
 
     /**

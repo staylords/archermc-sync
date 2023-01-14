@@ -7,23 +7,24 @@ import github.scarsz.discordsrv.api.commands.SlashCommand;
 import github.scarsz.discordsrv.api.commands.SlashCommandProvider;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.MessageBuilder;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.ChannelType;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.MessageHistory;
-import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SlashCommandEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.OptionType;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
+import github.scarsz.discordsrv.objects.managers.GroupSynchronizationManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
 import lombok.Getter;
-import me.staylords.sync.commands.AdminCommand;
+import me.neznamy.tab.api.TabAPI;
+import me.neznamy.tab.api.TablistFormatManager;
 import me.staylords.sync.commands.LinkCommand;
+import me.staylords.sync.listeners.BukkitListeners;
 import me.staylords.sync.listeners.GeneralJDAListeners;
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -39,7 +40,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     Let's make sure to create two brand-new channels in the discord to utilize respectively as sync and coin flip main channels.
      */
     private final static String SYNC_CHANNEL = "1062919124348575764";
-    private final static String COIN_FLIP_CHANNEL = "";
+    public final static String COIN_FLIP_CHANNEL = "1063540284127973426";
     public final static String BOT_TITLE = ":archermc: ArcherMC Synchronization :archermc:";
     public final static String BOT_FOOTER = "ArcherMC Official Bot";
 
@@ -58,10 +59,9 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         Using co.aikar command framework since I have no clue what ArcherMC uses.
          */
         BukkitCommandManager manager = new BukkitCommandManager(this);
-        Arrays.asList(
-                new LinkCommand(),
-                new AdminCommand()
-        ).forEach(manager::registerCommand);
+        manager.registerCommand(new LinkCommand());
+
+        this.getServer().getPluginManager().registerEvents(new BukkitListeners(), this);
     }
 
     public void initialize() {
@@ -122,34 +122,37 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     @SlashCommand(path = "sync")
     public void onSyncCommand(SlashCommandEvent event) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        event.deferReply().setEphemeral(true).queue();
+
         if (SyncPlugin.isLinked(event.getUser().getId())) {
-            event.deferReply().setEphemeral(true).queue();
-            event.getHook().sendMessage("already verified").queue();
+            event.getHook().sendMessage("Looks like your account is already linked.").queue();
             return;
         }
 
         if (event.getChannel().getType() != ChannelType.PRIVATE) {
-            event.deferReply().setEphemeral(true).queue();
-            event.getHook().sendMessage("you can execute this command in private chat").queue();
+            event.getHook().sendMessage("You can only execute this command in private chat!").queue();
             return;
         }
 
-        if (event.getOption("code") == null || Objects.requireNonNull(event.getOption("code")).getAsString().chars().count() != 4) {
-            event.deferReply().setEphemeral(true).queue();
-            event.getHook().sendMessage("Looks like you didn't insert a valid 4 digits synchronization code. Retry or execute the command again!").queue();
+        String code = Objects.requireNonNull(event.getOption("code")).getAsString();
+        if (code.length() != 4 || !NumberUtils.isDigits(code) || !accountManager.getLinkingCodes().containsKey(code)) {
+            event.getHook().sendMessage("You didn't insert a valid 4 digits synchronization code. Retry or execute the command again!").queue();
             return;
         }
 
-        int code = Integer.parseInt(Objects.requireNonNull(event.getOption("code")).getAsString());
+        UUID retrievedUuid = accountManager.getLinkingCodes().get(code);
+
         try {
-            accountManager.link(event.getUser().getId(), accountManager.getLinkingCodes().get(String.valueOf(code)));
-            accountManager.save();
-            OfflinePlayer player = Bukkit.getOfflinePlayer(accountManager.getUuid(event.getUser().getId()));
+            event.getHook().sendMessage("You inserted a valid code. We're starting the verification process.").queue();
+
+            Bukkit.getScheduler().runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
+                accountManager.link(event.getUser().getId(), retrievedUuid);
+                accountManager.save();
+            });
         } catch (Exception e) {
             e.printStackTrace();
+            event.getHook().sendMessage("Looks like we're having some internal issues. Request support from a staff member as soon as possible.").queue();
         }
-
-        event.reply(String.valueOf(code)).queue();
     }
 
     @Override
@@ -161,16 +164,42 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     }
 
     /**
-     * Quickly recover synchronized players information from java.util.UUID
+     * Quickly recover synchronized players information from Player UUID
      */
     public static boolean isLinked(UUID uuid) {
         return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsValue(uuid);
     }
 
     /**
-     * Quickly recover synchronized players information from discord user id
+     * Quickly recover synchronized players information from Discord User ID
      */
     public static boolean isLinked(String userId) {
         return DiscordSRV.getPlugin().getAccountLinkManager().getLinkedAccounts().containsKey(userId);
+    }
+
+    /**
+     * Quick check to see if a Player is still in our Discord from Player UUID
+     */
+    public static boolean isInDiscord(UUID uuid) {
+        return DiscordUtil.getUserById(DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(uuid)) != null;
+    }
+
+    public void update(Player player) {
+        AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        GroupSynchronizationManager synchronizationManager = DiscordSRV.getPlugin().getGroupSynchronizationManager();
+        Member member = DiscordUtil.getMemberById(accountManager.getDiscordId(player.getUniqueId()));
+        TablistFormatManager tablistFormatManager = TabAPI.getInstance().getTablistFormatManager();
+
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            DiscordUtil.setNickname(member,
+                    "[" +
+                            ChatColor.stripColor(synchronizationManager.getPermissions().getPrimaryGroup(player)) +
+                            "] " +
+                            player.getName());
+
+            if (player.isOnline()) {
+                tablistFormatManager.setSuffix(TabAPI.getInstance().getPlayer(player.getUniqueId()), " §a§l✓");
+            }
+        });
     }
 }

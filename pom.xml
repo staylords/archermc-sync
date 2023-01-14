@@ -122,6 +122,10 @@
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
+            <id>krypton</id>
+            <url>https://repo.kryptonmc.org/releases</url>
+        </repository>
+        <repository>
             <id>bungeecord-repo</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
@@ -153,11 +157,38 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- DeluxeCoinflipAPI (via jitpack.io) -->
+        <!-- TAB -->
+        <dependency>
+            <groupId>me.neznamy</groupId>
+            <artifactId>tab-api</artifactId>
+            <version>3.2.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.milkbowl.vault/VaultAPI -->
+        <dependency>
+            <groupId>net.milkbowl.vault</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- DeluxeCoinflipAPI (via system) -->
         <dependency>
             <groupId>com.github.ItsLewizzz</groupId>
             <artifactId>DeluxeCoinflipAPI</artifactId>
-            <version>1.0.2</version>
+            <version>LATEST</version>
+            <scope>system</scope>
+            <systemPath>F:/Desktop 3/servers/test/plugins/coinflip-archer.jar</systemPath>
+        </dependency>
+
+        <!-- EconomyAPI (via system) -->
+        <dependency>
+            <groupId>pl.jonspitfire</groupId>
+            <artifactId>EconomyAPI</artifactId>
+            <version>LATEST</version>
+            <scope>system</scope>
+            <systemPath>F:/Desktop 3/servers/test/plugins/economyapi-1.3.jar</systemPath>
         </dependency>
 
         <!-- DiscordSRV (via scarsz-nexus) -->
