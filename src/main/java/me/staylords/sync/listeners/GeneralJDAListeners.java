@@ -34,6 +34,7 @@ import pl.jonspitfire.economyapi.types.Economy;
 import java.awt.*;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GeneralJDAListeners extends ListenerAdapter {
@@ -207,7 +208,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                     winAmount -= taxed;
 
                     Bukkit.getPluginManager().callEvent(new CoinflipCompletedEvent(winner, loser, winAmount, provider, author));
-                    provider.deposit(winner.getName(), winAmount);
+                    provider.deposit(winner.getUniqueId(), winAmount);
 
                     playerManager.getPlayer(winner.getUniqueId()).updateWins();
                     playerManager.getPlayer(winner.getUniqueId()).updateProfit(winAmount);
@@ -240,75 +241,87 @@ public class GeneralJDAListeners extends ListenerAdapter {
             return;
         }
 
+        if (event.getButton().getId().equalsIgnoreCase("check-balance")) {
+            if (!SyncPlugin.isLinked(user.getId())) {
+                event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account. If you wish to check your in-game balance through discord make sure to check the `#sync` channel.").queue();
+                return;
+            }
+
+            event.getHook().sendMessage("Hello there! To check your in-balance execute `/bal`.").queue();
+            return;
+        }
+
         /*
         Sync integration
          */
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
 
-        switch (event.getButton().getId()) {
-            case "sync-account":
-                if (SyncPlugin.isLinked(user.getId())) {
-                    event.getHook().sendMessageEmbeds(new EmbedBuilder()
-                            .setColor(new Color(255, 65, 65))
-                            .setTitle(SyncPlugin.BOT_TITLE)
-                            .addField("Hello " + event.getUser().getName() + "!",
-                                    "Your discord account is already linked to " + SyncPlugin.returnFancyName(event.getUser().getId()) +
-                                            "\n" +
-                                            "" +
-                                            "\n" +
-                                            "If you wish to unlink it simply click the `Unlink` button on the pinned message!", false)
-                            .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl())
-                            .build()).queue();
-                    return;
-                }
-
-                event.getHook().sendMessage("We've sent you a message! Continue the verification process in our private chat.").queue();
-
-                EmbedBuilder builder = new EmbedBuilder();
-                builder
+        if (event.getButton().getId().equalsIgnoreCase("sync-account")) {
+            if (SyncPlugin.isLinked(user.getId())) {
+                event.getHook().sendMessageEmbeds(new EmbedBuilder()
                         .setColor(new Color(255, 65, 65))
                         .setTitle(SyncPlugin.BOT_TITLE)
-                        .addField("Hello " + user.getName() + "!",
-                                "Connect to our server via `archermc.net` and run the command `/link`." +
+                        .addField("Hello " + event.getUser().getName() + "!",
+                                "Your discord account is already linked to " + SyncPlugin.returnFancyName(event.getUser().getId()) +
                                         "\n" +
                                         "" +
                                         "\n" +
-                                        "Once you have the **4 digits code** we generated for you **in-game**, please link your **account** by executing `/sync [****]` in this chat and you'll be **good to go**! :smile:",
-                                false)
-                        .setThumbnail(event.getUser().getEffectiveAvatarUrl())
-                        .setImage("https://i.imgur.com/3dCjNA4.jpg")
-                        .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
+                                        "If you wish to unlink it simply click the `Unlink` button on the pinned message!", false)
+                        .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl())
+                        .build()).queue();
+                return;
+            }
 
-                event.getUser().openPrivateChannel()
-                        .flatMap(channel -> channel.sendMessageEmbeds(builder.build()))
-                        .queue();
-                break;
-            case "unsync-account":
-                if (!SyncPlugin.isLinked(user.getId())) {
-                    event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account.").queue();
-                    return;
-                }
+            event.getHook().sendMessage("We've sent you a message! Continue the verification process in our private chat.").queue();
 
-                Button confirmButton = Button.success("confirm-unsync-process", "Yes, I want to unlink it.");
-                Button cancelButton = Button.danger("cancel-unsync-process", "No, I want to cancel the process.");
+            EmbedBuilder builder = new EmbedBuilder();
+            builder
+                    .setColor(new Color(255, 65, 65))
+                    .setTitle(SyncPlugin.BOT_TITLE)
+                    .addField("Hello " + user.getName() + "!",
+                            "Connect to our server via `archermc.net` and run the command `/link`." +
+                                    "\n" +
+                                    "" +
+                                    "\n" +
+                                    "Once you have the **4 digits code** we generated for you **in-game**, please link your **account** by executing `/sync [****]` in this chat and you'll be **good to go**! :smile:",
+                            false)
+                    .setThumbnail(event.getUser().getEffectiveAvatarUrl())
+                    .setImage("https://i.imgur.com/3dCjNA4.jpg")
+                    .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
 
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder
-                        .setColor(new Color(255, 65, 65))
-                        .setTitle(SyncPlugin.BOT_TITLE)
-                        .addField("Hello " + SyncPlugin.returnFancyName(user.getId()) + "!\n",
-                                "In order to **unlink** your account, select an option down below.\nAre you really sure you want to do it?", false)
-                        .setThumbnail("https://mc-heads.net/avatar/" + SyncPlugin.returnFancyName(event.getUser().getId()))
-                        .setImage("https://i.imgur.com/3dCjNA4.jpg")
-                        .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
+            event.getUser().openPrivateChannel()
+                    .flatMap(channel -> channel.sendMessageEmbeds(builder.build()))
+                    .queue();
+        }
 
-                Message message = new MessageBuilder()
-                        .setEmbeds(embedBuilder.build())
-                        .setActionRows(ActionRow.of(confirmButton, cancelButton))
-                        .build();
+        if (event.getButton().getId().equalsIgnoreCase("unsync-account")) {
+            if (!SyncPlugin.isLinked(user.getId())) {
+                event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account.").queue();
+                return;
+            }
 
-                event.getHook().sendMessage(message).queue();
-                break;
+            Button confirmButton = Button.success("confirm-unsync-process", "Yes, I want to unlink it.");
+            Button cancelButton = Button.danger("cancel-unsync-process", "No, I want to cancel the process.");
+
+            EmbedBuilder builder = new EmbedBuilder();
+            builder
+                    .setColor(new Color(255, 65, 65))
+                    .setTitle(SyncPlugin.BOT_TITLE)
+                    .addField("Hello " + SyncPlugin.returnFancyName(user.getId()) + "!\n",
+                            "In order to **unlink** your account, select an option down below.\nAre you really sure you want to do it?", false)
+                    .setThumbnail("https://mc-heads.net/avatar/" + SyncPlugin.returnFancyName(event.getUser().getId()))
+                    .setImage("https://i.imgur.com/3dCjNA4.jpg")
+                    .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
+
+            Message message = new MessageBuilder()
+                    .setEmbeds(builder.build())
+                    .setActionRows(ActionRow.of(confirmButton, cancelButton))
+                    .build();
+
+            event.getHook().sendMessage(message).queue();
+        }
+
+        switch (event.getButton().getId()) {
             case "confirm-unsync-process":
                 if (!SyncPlugin.isLinked(user.getId())) {
                     event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account.").queue();

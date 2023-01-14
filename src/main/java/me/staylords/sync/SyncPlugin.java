@@ -162,6 +162,41 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         }
     }
 
+    @SlashCommand(path = "bal")
+    public void onBalanceCommand(SlashCommandEvent event) {
+        User user = event.getUser();
+
+        event.deferReply().setEphemeral(true).queue();
+
+        if (!SyncPlugin.isLinked(user.getId())) {
+            event.getHook().sendMessage("Your Minecraft account must be linked in order to execute this command.").queue();
+            return;
+        }
+
+        TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
+
+        if (!event.getChannel().getId().equals(channel.getId())) {
+            event.getHook().sendMessage("You can only execute this command in the `#coinflip` text channel.").queue();
+            return;
+        }
+
+        Economy money = SyncPlugin.getProviderByName("money");
+        Economy tokens = SyncPlugin.getProviderByName("tokens");
+        Economy gems = SyncPlugin.getProviderByName("gems");
+
+        if (money == null || tokens == null || gems == null) {
+            event.getHook().sendMessage("Looks like we're having some internal issues. Make a support request to a staff member as soon as possible.").queue();
+            return;
+        }
+
+        UUID uuid = SyncPlugin.returnUUID(user.getId());
+
+        event.getHook().sendMessage("Your current **balance** is: \n"
+                + "– Money: `" + ChatColor.stripColor(money.format(money.getBalance(uuid))) + "`\n"
+                + "– Tokens: `" + ChatColor.stripColor(tokens.format(tokens.getBalance(uuid))) + "`\n"
+                + "– Gems: `" + ChatColor.stripColor(gems.format(gems.getBalance(uuid))) + "`\n").queue();
+    }
+
     @SlashCommand(path = "cf")
     public void onCoinflipCommand(SlashCommandEvent event) {
         User user = event.getUser();
@@ -183,7 +218,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         long wager = NumberUtils.createLong(Objects.requireNonNull(event.getOption("wager")).getAsString());
         String currency = Objects.requireNonNull(event.getOption("currency")).getAsString();
 
-        Economy provider = this.getProviderByName(currency);
+        Economy provider = getProviderByName(currency);
         if (provider == null) {
             event.getHook().sendMessage("This currency does not exist, make sure to insert a value between `[money, tokens, gems]`.").queue();
             return;
@@ -207,7 +242,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         //After we pass every check, we create CoinflipGame
         CoinflipGame game = new CoinflipGame(uuid, new ItemStack(Material.SKULL_ITEM), provider, wager);
 
-        provider.withdraw(playerName, wager);
+        provider.withdraw(uuid, wager);
         playerManager.addCoinflipGame(uuid, game);
         Bukkit.getPluginManager().callEvent(new CoinflipCreatedEvent(Bukkit.getOfflinePlayer(uuid), game));
 
@@ -219,6 +254,8 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         return new HashSet<>(Arrays.asList(
                 new PluginSlashCommand(this, new CommandData("sync", "Link your Minecraft account to our Discord server!")
                         .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true)),
+
+                new PluginSlashCommand(this, new CommandData("bal", "Check your in-game balance!")),
 
                 new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
                         .addOption(OptionType.INTEGER, "wager", "How much you want to bet?", true)
@@ -250,7 +287,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     /**
      * Method from Lfun/lewisdev/coinflip/command/CoinflipCommand;getProviderByName(Ljava/lang/String;)Lpl/jonspitfire/economyapi/types/Economy;
      **/
-    private Economy getProviderByName(String name) {
+    public static Economy getProviderByName(String name) {
         for (Economy provider : DeluxeCoinflip.getInstance().getEconomyProviders()) {
             if (!name.equalsIgnoreCase(provider.getInputName())) continue;
             return provider;
@@ -264,6 +301,14 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     public static String returnFancyName(String userId) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
         return Bukkit.getOfflinePlayer(accountManager.getLinkedAccounts().get(userId)).getName();
+    }
+
+    /**
+     * @return Minecraft UUID
+     **/
+    public static UUID returnUUID(String userId) {
+        AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        return accountManager.getLinkedAccounts().get(userId);
     }
 
     /**

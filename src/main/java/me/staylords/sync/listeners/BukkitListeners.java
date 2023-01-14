@@ -91,9 +91,9 @@ public class BukkitListeners implements Listener {
 
         /*
         We try to delete the discord message even tho the coinflip was only interacted in-game.
-        Only retrieving past 20 messages to prevent performance issues.
+        Only retrieving past 100 messages to prevent performance issues.
          */
-        channel.getHistory().retrievePast(20)
+        channel.getHistory().retrievePast(100)
                 .queueAfter(1, TimeUnit.SECONDS, messages -> messages
                         .stream()
                         .filter(m -> m != null && !m.getEmbeds().isEmpty())
