@@ -4,3 +4,8 @@ version: ${project.version}-${git.commit.id.abbrev}/${git.branch}
 author: staylords
 depend:
   - DiscordSRV
+  - DeluxeCoinflip
+  - Tokens
+  - EconomyAPI
+  - TokenManager
+  - TAB

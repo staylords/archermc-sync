@@ -19,7 +19,7 @@ import java.util.UUID;
 public class LinkCommand extends BaseCommand {
 
     @Default
-    @CommandPermission("")
+    @CommandPermission(value = "")
     public void onLinkCommand(Player player) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
 

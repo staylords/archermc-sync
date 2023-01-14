@@ -1,6 +1,10 @@
 package me.staylords.sync;
 
 import co.aikar.commands.BukkitCommandManager;
+import fun.lewisdev.coinflip.DeluxeCoinflip;
+import fun.lewisdev.coinflip.events.CoinflipCreatedEvent;
+import fun.lewisdev.coinflip.game.CoinflipGame;
+import fun.lewisdev.coinflip.player.PlayerManager;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.commands.PluginSlashCommand;
 import github.scarsz.discordsrv.api.commands.SlashCommand;
@@ -25,8 +29,11 @@ import me.staylords.sync.listeners.GeneralJDAListeners;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import pl.jonspitfire.economyapi.types.Economy;
 
 import java.awt.*;
 import java.util.*;
@@ -36,9 +43,9 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     @Getter
     private static SyncPlugin instance;
 
-    /*
-    Let's make sure to create two brand-new channels in the discord to utilize respectively as sync and coin flip main channels.
-     */
+    /**
+     * Let's make sure to create two brand-new channels in the discord to utilize respectively as sync and coin flip main channels.
+     **/
     private final static String SYNC_CHANNEL = "1062919124348575764";
     public final static String COIN_FLIP_CHANNEL = "1063540284127973426";
     public final static String BOT_TITLE = ":archermc: ArcherMC Synchronization :archermc:";
@@ -151,15 +158,71 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
             });
         } catch (Exception e) {
             e.printStackTrace();
-            event.getHook().sendMessage("Looks like we're having some internal issues. Request support from a staff member as soon as possible.").queue();
+            event.getHook().sendMessage("Looks like we're having some internal issues. Make a support request to a staff member as soon as possible.").queue();
         }
+    }
+
+    @SlashCommand(path = "cf")
+    public void onCoinflipCommand(SlashCommandEvent event) {
+        User user = event.getUser();
+
+        event.deferReply().setEphemeral(true).queue();
+
+        if (!SyncPlugin.isLinked(user.getId())) {
+            event.getHook().sendMessage("Your Minecraft account must be linked in order to execute this command.").queue();
+            return;
+        }
+
+        TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
+
+        if (!event.getChannel().getId().equals(channel.getId())) {
+            event.getHook().sendMessage("You can only execute this command in the `#coinflip` text channel.").queue();
+            return;
+        }
+
+        long wager = NumberUtils.createLong(Objects.requireNonNull(event.getOption("wager")).getAsString());
+        String currency = Objects.requireNonNull(event.getOption("currency")).getAsString();
+
+        Economy provider = this.getProviderByName(currency);
+        if (provider == null) {
+            event.getHook().sendMessage("This currency does not exist, make sure to insert a value between `[money, tokens, gems]`.").queue();
+            return;
+        }
+
+        String playerName = returnFancyName(user.getId());
+        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+        PlayerManager playerManager = DeluxeCoinflip.getInstance().getPlayerManager();
+
+        if (playerManager.getCurrentGames().containsKey(uuid)) {
+            event.getHook().sendMessage("You already have an active coinflip.").queue();
+            return;
+        }
+
+        if (provider.getBalance(returnFancyName(user.getId())) < wager) {
+            event.getHook().sendMessage("Sorry **" + playerName + "** but you **do not** have **enough " + provider.getInputName() + "** to create this coinflip!\n" +
+                    "Your current balance is: **" + ChatColor.stripColor(provider.format(provider.getBalance(playerName))) + "**").queue();
+            return;
+        }
+
+        //After we pass every check, we create CoinflipGame
+        CoinflipGame game = new CoinflipGame(uuid, new ItemStack(Material.SKULL_ITEM), provider, wager);
+
+        provider.withdraw(playerName, wager);
+        playerManager.addCoinflipGame(uuid, game);
+        Bukkit.getPluginManager().callEvent(new CoinflipCreatedEvent(Bukkit.getOfflinePlayer(uuid), game));
+
+        event.getHook().sendMessage("You successfully created a " + ChatColor.stripColor(provider.format(wager)) + " coinflip!").queue();
     }
 
     @Override
     public Set<PluginSlashCommand> getSlashCommands() {
-        return new HashSet<>(Collections.singletonList(
+        return new HashSet<>(Arrays.asList(
                 new PluginSlashCommand(this, new CommandData("sync", "Link your Minecraft account to our Discord server!")
-                        .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true))
+                        .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true)),
+
+                new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
+                        .addOption(OptionType.INTEGER, "wager", "How much you want to bet?", true)
+                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true))
         ));
     }
 
@@ -184,6 +247,28 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         return DiscordUtil.getUserById(DiscordSRV.getPlugin().getAccountLinkManager().getDiscordId(uuid)) != null;
     }
 
+    /**
+     * Method from Lfun/lewisdev/coinflip/command/CoinflipCommand;getProviderByName(Ljava/lang/String;)Lpl/jonspitfire/economyapi/types/Economy;
+     **/
+    private Economy getProviderByName(String name) {
+        for (Economy provider : DeluxeCoinflip.getInstance().getEconomyProviders()) {
+            if (!name.equalsIgnoreCase(provider.getInputName())) continue;
+            return provider;
+        }
+        return null;
+    }
+
+    /**
+     * @return Clean Minecraft name
+     **/
+    public static String returnFancyName(String userId) {
+        AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        return Bukkit.getOfflinePlayer(accountManager.getLinkedAccounts().get(userId)).getName();
+    }
+
+    /**
+     * Updates Discord name and adds verified checkmark in TAB
+     **/
     public void update(Player player) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
         GroupSynchronizationManager synchronizationManager = DiscordSRV.getPlugin().getGroupSynchronizationManager();

@@ -57,6 +57,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
     @Subscribe
     public void onAccountLinkedEvent(AccountLinkedEvent event) {
         User user = event.getUser();
+        if (user == null) return;
 
         EmbedBuilder builder = new EmbedBuilder();
         builder
@@ -97,6 +98,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
     @Subscribe
     public void onAccountUnlinkedEvent(AccountUnlinkedEvent event) {
         User user = event.getDiscordUser();
+        if (user == null) return;
 
         EmbedBuilder builder = new EmbedBuilder();
         builder
@@ -152,7 +154,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
          */
         if (event.getButton().getId().equalsIgnoreCase("take-coinflip")) {
             if (!SyncPlugin.isLinked(user.getId())) {
-                event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account.").queue();
+                event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account. If you wish to play a coinflip game through discord make sure to check the `#sync` channel.").queue();
                 return;
             }
 
@@ -169,7 +171,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 Coinflip from @author exists, so we run coinflip function.
                  */
                 CoinflipGame game = playerManager.getCurrentGames().get(author.getUniqueId());
-                OfflinePlayer player = Bukkit.getOfflinePlayer(returnFancyName(user.getId()));
+                OfflinePlayer player = Bukkit.getOfflinePlayer(SyncPlugin.returnFancyName(user.getId()));
 
                 if (player.getUniqueId() == author.getUniqueId()) {
                     event.getHook().sendMessage("You can't play against yourself!").queue();
@@ -178,8 +180,8 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
                 Economy provider = game.getProvider();
 
-                if (provider.getBalance(player) < game.getAmount()) {
-                    event.getHook().sendMessage("Sorry **" + player.getName() + "** but you **do not** have **enough " + provider.getInputName() + "** to take this game!\n" +
+                if (provider.getBalance(player.getUniqueId()) < game.getAmount()) {
+                    event.getHook().sendMessage("Sorry **" + player.getName() + "** but you **do not** have **enough " + provider.getInputName() + "** to take this coinflip!\n" +
                             "Your current balance is: **" + ChatColor.stripColor(provider.format(provider.getBalance(player))) + "**").queue();
                     return;
                 }
@@ -204,7 +206,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                     long taxed = (long) (taxRate * winAmount / 100.0);
                     winAmount -= taxed;
 
-                    Bukkit.getPluginManager().callEvent(new CoinflipCompletedEvent(winner, loser, winAmount, provider));
+                    Bukkit.getPluginManager().callEvent(new CoinflipCompletedEvent(winner, loser, winAmount, provider, author));
                     provider.deposit(winner.getName(), winAmount);
 
                     playerManager.getPlayer(winner.getUniqueId()).updateWins();
@@ -221,10 +223,20 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
                 event.getMessage().delete().queue();
             } else {
-                event.getHook().sendMessage("You can't play this coinflip anymore as it's not available.").queue();
+                event.getHook().sendMessage("This coinflip is not available anymore.").queue();
                 event.getMessage().delete().queue();
             }
 
+            return;
+        }
+
+        if (event.getButton().getId().equalsIgnoreCase("create-coinflip")) {
+            if (!SyncPlugin.isLinked(user.getId())) {
+                event.getHook().sendMessage("Looks like your Discord account is not linked to any Minecraft account. If you wish to create a coinflip game through discord make sure to check the `#sync` channel.").queue();
+                return;
+            }
+
+            event.getHook().sendMessage("Hello there! To create a coinflip execute `/cf [amount] [money/tokens/gems]`.").queue();
             return;
         }
 
@@ -240,7 +252,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                             .setColor(new Color(255, 65, 65))
                             .setTitle(SyncPlugin.BOT_TITLE)
                             .addField("Hello " + event.getUser().getName() + "!",
-                                    "Your discord account is already linked to " + returnFancyName(event.getUser().getId()) +
+                                    "Your discord account is already linked to " + SyncPlugin.returnFancyName(event.getUser().getId()) +
                                             "\n" +
                                             "" +
                                             "\n" +
@@ -284,9 +296,9 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 embedBuilder
                         .setColor(new Color(255, 65, 65))
                         .setTitle(SyncPlugin.BOT_TITLE)
-                        .addField("Hello " + returnFancyName(user.getId()) + "!\n",
+                        .addField("Hello " + SyncPlugin.returnFancyName(user.getId()) + "!\n",
                                 "In order to **unlink** your account, select an option down below.\nAre you really sure you want to do it?", false)
-                        .setThumbnail("https://mc-heads.net/avatar/" + returnFancyName(event.getUser().getId()))
+                        .setThumbnail("https://mc-heads.net/avatar/" + SyncPlugin.returnFancyName(event.getUser().getId()))
                         .setImage("https://i.imgur.com/3dCjNA4.jpg")
                         .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
 
@@ -318,11 +330,6 @@ public class GeneralJDAListeners extends ListenerAdapter {
             default:
                 break;
         }
-    }
-
-    private String returnFancyName(String userId) {
-        AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
-        return Bukkit.getOfflinePlayer(accountManager.getLinkedAccounts().get(userId)).getName();
     }
 
 }
