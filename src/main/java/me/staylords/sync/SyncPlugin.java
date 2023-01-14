@@ -150,7 +150,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         UUID retrievedUuid = accountManager.getLinkingCodes().get(code);
 
         try {
-            event.getHook().sendMessage("You inserted a valid code. We're starting the verification process.").queue();
+            event.getHook().sendMessage("You have provided a valid code. We're starting the verification process.").queue();
 
             Bukkit.getScheduler().runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
                 accountManager.link(event.getUser().getId(), retrievedUuid);

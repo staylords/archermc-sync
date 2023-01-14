@@ -15,7 +15,7 @@
     </properties>
 
     <build>
-        <finalName>${project.name}</finalName>
+        <finalName>ArcherDiscordLink</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
