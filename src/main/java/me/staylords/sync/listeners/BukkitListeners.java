@@ -25,7 +25,16 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @author staylords
+ */
 public class BukkitListeners implements Listener {
+
+    private final SyncPlugin instance;
+
+    public BukkitListeners(SyncPlugin instance) {
+        this.instance = instance;
+    }
 
     @EventHandler
     public void onPlayerJoinEvent(PlayerJoinEvent event) {
@@ -33,7 +42,7 @@ public class BukkitListeners implements Listener {
         if (!SyncPlugin.isLinked(player.getUniqueId())) return;
         if (!SyncPlugin.isInDiscord(player.getUniqueId())) return;
 
-        SyncPlugin.getInstance().update(player);
+        this.instance.update(player);
     }
 
     @EventHandler
@@ -42,7 +51,7 @@ public class BukkitListeners implements Listener {
         if (!SyncPlugin.isLinked(player.getUniqueId())) return;
         if (!SyncPlugin.isInDiscord(player.getUniqueId())) return;
 
-        SyncPlugin.getInstance().update(player);
+        this.instance.update(player);
     }
 
     @EventHandler
@@ -80,8 +89,8 @@ public class BukkitListeners implements Listener {
         EmbedBuilder builder = new EmbedBuilder();
         builder
                 .setColor(new Color(255, 65, 65))
-                .setTitle(WordUtils.capitalize(event.getProvider().getInputName() + " coinflip"))
-                .addField("Game Summary", "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() + "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!", true)
+                .setTitle("Game Summary")
+                .addField(WordUtils.capitalize(event.getProvider().getInputName() + " coinflip"), "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() + "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!", true)
                 .setFooter(new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Timestamp(System.currentTimeMillis())));
 
         Message message = new MessageBuilder()
@@ -90,8 +99,8 @@ public class BukkitListeners implements Listener {
         DiscordUtil.queueMessage(channel, message);
 
         /*
-        We try to delete the discord message even tho the coinflip was only interacted in-game.
-        Only retrieving past 100 messages to prevent performance issues.
+         * We try to delete the discord message even tho the coinflip was only interacted in-game.
+         * Only retrieving past 100 messages to prevent performance issues.
          */
         channel.getHistory().retrievePast(100)
                 .queueAfter(1, TimeUnit.SECONDS, messages -> messages

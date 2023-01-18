@@ -3,8 +3,9 @@ main: me.staylords.sync.SyncPlugin
 version: ${project.version}-${git.commit.id.abbrev}/${git.branch}
 description: ${git.remote.origin.url}
 author: ${git.build.user.name}
-depend:
+softdepend:
   - DiscordSRV
+depend:
   - DeluxeCoinflip
   - Tokens
   - EconomyAPI

@@ -10,7 +10,6 @@ import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.Subscribe;
 import github.scarsz.discordsrv.api.events.AccountLinkedEvent;
 import github.scarsz.discordsrv.api.events.AccountUnlinkedEvent;
-import github.scarsz.discordsrv.api.events.DiscordReadyEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.MessageBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
@@ -34,25 +33,17 @@ import pl.jonspitfire.economyapi.types.Economy;
 import java.awt.*;
 import java.util.Objects;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * @author staylords
+ */
 public class GeneralJDAListeners extends ListenerAdapter {
 
-    @Subscribe
-    public void onDiscordReadyEvent(DiscordReadyEvent event) {
-        /*
-        DiscordSRV needs to fully load its information before we can initialize
-        our basic project functions, so after waiting patiently we go for it.
-         */
-        SyncPlugin.getInstance().initialize();
-        DiscordUtil.getJda().addEventListener(this);
+    private final SyncPlugin instance;
 
-        /*
-        DiscordSRV uses an ancient JDA API which doesn't allow to use Models or correct JDA Command framework, so
-        we double register all of our commands in order to make sure players can execute private messages commands.
-         */
-        SyncPlugin.getInstance().getSlashCommands().forEach(pluginSlashCommand -> DiscordUtil.getJda().updateCommands().addCommands(pluginSlashCommand.getCommandData()).queue());
+    public GeneralJDAListeners(SyncPlugin instance) {
+        this.instance = instance;
     }
 
     @Subscribe
@@ -89,7 +80,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
         if (event.getPlayer() instanceof Player) {
             Player player = event.getPlayer().getPlayer();
 
-            SyncPlugin.getInstance().update(player);
+            this.instance.update(player);
 
             player.sendTitle("§a§lAccount linked!", "§bPress §b§lTAB §bto see your brand new §a§l✓ §bsuffix!", 60, 60, 60);
             player.sendMessage(messages);
@@ -124,7 +115,6 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
             if (event.getPlayer() instanceof Player) {
                 TablistFormatManager tablistFormatManager = TabAPI.getInstance().getTablistFormatManager();
-
                 tablistFormatManager.resetSuffix(TabAPI.getInstance().getPlayer(event.getPlayer().getUniqueId()));
             }
         });
@@ -151,7 +141,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
         event.deferReply().setEphemeral(true).queue();
 
         /*
-        Coinflip integrations
+         * Coinflip integrations
          */
         if (event.getButton().getId().equalsIgnoreCase("take-coinflip")) {
             if (!SyncPlugin.isLinked(user.getId())) {
@@ -169,7 +159,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
             if (playerManager.getCurrentGames().containsKey(author.getUniqueId())) {
                 /*
-                Coinflip from @author exists, so we run coinflip function.
+                 * Coinflip from author exists, so we run coinflip function.
                  */
                 CoinflipGame game = playerManager.getCurrentGames().get(author.getUniqueId());
                 OfflinePlayer player = Bukkit.getOfflinePlayer(SyncPlugin.returnFancyName(user.getId()));
@@ -200,7 +190,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 OfflinePlayer winner = new Random().nextInt(2) == 0 ? player : author;
                 OfflinePlayer loser = winner == player ? author : player;
 
-                Bukkit.getScheduler().runTask(SyncPlugin.getInstance(), () -> {
+                Bukkit.getScheduler().runTask(this.instance, () -> {
                     long winAmount = game.getAmount() * 2;
 
                     double taxRate = DeluxeCoinflip.getInstance().getConfig().getDouble("settings.tax.rate");
@@ -252,7 +242,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
         }
 
         /*
-        Sync integration
+         * Sync integration
          */
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
 

@@ -15,6 +15,9 @@ import org.bukkit.entity.Player;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * @author staylords
+ */
 @CommandAlias("link")
 public class LinkCommand extends BaseCommand {
 
@@ -33,8 +36,8 @@ public class LinkCommand extends BaseCommand {
         }
 
         /*
-        We prevent filling github.scarsz.discordsrv.objects.managers.AccountLinkManager.getLinkingCodes Map<String, UUID>
-        with the same UUID so after a little check we remove it and send the player a 'warning' message.
+         * We prevent filling github.scarsz.discordsrv.objects.managers.AccountLinkManager.getLinkingCodes Map<String, UUID>
+         * with the same UUID so after a little check we remove it and send the player a 'warning' message.
          */
         if (accountManager.getLinkingCodes().containsValue(player.getUniqueId())) {
             player.sendMessage("§7§o[Server: Generating a new code for " + player.getName() + "]");

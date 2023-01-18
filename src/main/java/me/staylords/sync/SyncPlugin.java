@@ -20,12 +20,12 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.But
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import github.scarsz.discordsrv.objects.managers.GroupSynchronizationManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
-import lombok.Getter;
 import me.neznamy.tab.api.TabAPI;
 import me.neznamy.tab.api.TablistFormatManager;
 import me.staylords.sync.commands.LinkCommand;
 import me.staylords.sync.listeners.BukkitListeners;
 import me.staylords.sync.listeners.GeneralJDAListeners;
+import me.staylords.sync.task.InitializeTask;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -39,44 +39,65 @@ import java.awt.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Discord account linking & coinflip
+ * implementation to DiscordSRV API.
+ *
+ * @author staylords
+ */
 public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
-    @Getter
-    private static SyncPlugin instance;
 
     /**
      * Let's make sure to create two brand-new channels in the discord to utilize respectively as sync and coin flip main channels.
      **/
-    private final static String SYNC_CHANNEL = "1062919124348575764";
-    public final static String COIN_FLIP_CHANNEL = "1063540284127973426";
-    public final static String BOT_TITLE = ":archermc: ArcherMC Synchronization :archermc:";
-    public final static String BOT_FOOTER = "ArcherMC Official Bot";
+    private static final String SYNC_CHANNEL = "1063990513897844806";
+    public static final String COIN_FLIP_CHANNEL = "1043375303420026942";
+    public static final String BOT_TITLE = "<:archermc:778274759519371285> ArcherMC Synchronization <:archermc:778274759519371285>";
+    public static final String BOT_FOOTER = "ArcherMC Official Bot";
+
+    private GeneralJDAListeners hook;
 
     @Override
     public void onEnable() {
-        instance = this;
+        if (getServer().getPluginManager().getPlugin("DiscordSRV") != null) {
+            subscribeToDiscordSrv();
+        } else {
+            this.getServer().shutdown();
+        }
 
         /*
-        Registering all our JDA listeners through DiscordSRV API
-        # me.staylords.sync.listeners.GeneralJDAListeners
-        # ...
-         */
-        DiscordSRV.api.subscribe(new GeneralJDAListeners());
-
-        /*
-        Using co.aikar command framework since I have no clue what ArcherMC uses.
+         * Using co.aikar command framework since I have no clue what ArcherMC uses.
          */
         BukkitCommandManager manager = new BukkitCommandManager(this);
         manager.registerCommand(new LinkCommand());
 
-        this.getServer().getPluginManager().registerEvents(new BukkitListeners(), this);
+        //Bukkit
+        this.getServer().getPluginManager().registerEvents(new BukkitListeners(this), this);
+    }
+
+    @Override
+    public void onDisable() {
+        DiscordSRV.api.unsubscribe(hook);
+    }
+
+    public void subscribeToDiscordSrv() {
+        /*
+         * Registering all our JDA listeners through DiscordSRV API
+         * # me.staylords.sync.listeners.GeneralJDAListeners
+         * # ...
+         */
+        DiscordSRV.api.subscribe(hook = new GeneralJDAListeners(this));
+
+        //Bukkit
+        new InitializeTask(this).runTaskTimerAsynchronously(this, 20L * 10, 20L * 10);
     }
 
     public void initialize() {
-        TextChannel textChannel = DiscordUtil.getJda().getTextChannelById(SYNC_CHANNEL);
+        TextChannel textChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(SYNC_CHANNEL);
 
         if (textChannel != null) {
             /*
-            We fully delete messages and pins, so we prevent dupes and channel will look cleaner.
+             * We fully delete messages and pins, so we prevent dupes and channel will look cleaner.
              */
             MessageHistory history = MessageHistory.getHistoryFromBeginning(textChannel).complete();
             history.getRetrievedHistory().forEach(message -> {
@@ -116,7 +137,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
             textChannel.sendMessage(message).queue();
 
             /*
-            This assumes that the channel has at least a message, so we wait until the message above is queued and sent, and we pin it again.
+             * This assumes that the channel has at least a message, so we wait until the message above is queued and sent, and we pin it again.
              */
             textChannel.getHistory().retrievePast(1)
                     .map(messages -> messages.get(0))
@@ -285,7 +306,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
     }
 
     /**
-     * Method from Lfun/lewisdev/coinflip/command/CoinflipCommand;getProviderByName(Ljava/lang/String;)Lpl/jonspitfire/economyapi/types/Economy;
+     * @see DeluxeCoinflip#getEconomyProviders()
      **/
     public static Economy getProviderByName(String name) {
         for (Economy provider : DeluxeCoinflip.getInstance().getEconomyProviders()) {
