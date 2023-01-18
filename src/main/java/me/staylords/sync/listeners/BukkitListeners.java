@@ -91,7 +91,7 @@ public class BukkitListeners implements Listener {
                 .setColor(new Color(255, 65, 65))
                 .setTitle("Game Summary")
                 .addField(WordUtils.capitalize(event.getProvider().getInputName() + " coinflip"), "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() + "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!", true)
-                .setFooter(new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Timestamp(System.currentTimeMillis())));
+                .setFooter(new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Timestamp(System.currentTimeMillis())), DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
 
         Message message = new MessageBuilder()
                 .setEmbeds(builder.build())
