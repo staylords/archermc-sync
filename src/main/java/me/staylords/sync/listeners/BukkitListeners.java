@@ -13,13 +13,9 @@ import github.scarsz.discordsrv.util.DiscordUtil;
 import me.staylords.sync.SyncPlugin;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import pl.jonspitfire.economyapi.types.Economy;
@@ -99,6 +95,7 @@ public class BukkitListeners implements Listener {
                 .setEmbeds(builder.build())
                 .build();
         DiscordUtil.queueMessage(channel, message);
+
 
         /*
         channel.getHistory().retrievePast(100)

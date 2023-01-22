@@ -122,6 +122,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
             this.initialize();
         }
     }
+
     public void initialize() {
         TextChannel textChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(SYNC_CHANNEL);
         if (textChannel == null) return;
