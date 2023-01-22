@@ -52,7 +52,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
      **/
     private static final String SYNC_CHANNEL = "1063990513897844806";
     public static final String COIN_FLIP_CHANNEL = "1043375303420026942";
-    public static final String BOT_TITLE = "<:archermc:778274759519371285> ArcherMC Synchronization <:archermc:778274759519371285>";
+    public static final String BOT_TITLE = "ArcherMC Discord Linking";
     public static final String BOT_FOOTER = "ArcherMC Official Bot";
 
     private GeneralJDAListeners hook;
@@ -152,10 +152,9 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
 
         EmbedBuilder builder = new EmbedBuilder();
         builder
-                .setColor(new Color(255, 65, 65))
+                .setColor(new Color(209, 62, 75))
                 .setTitle(BOT_TITLE)
-                .addField("Hello there!",
-                            "In order to **synchronize** your **in-game roles** and be able to access **our " +
+                .addField("In order to **link** your **in-game roles** and be able to access **our " +
                                     "features**, click the `Link` button and follow the **procedure**." +
                                     "\n" +
                                     " " +
@@ -279,7 +278,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
 
         Economy provider = getProviderByName(currency);
         if (provider == null) {
-            event.getHook().sendMessage("This currency does not exist, make sure to insert a value between `[money, tokens, gems]`.").queue();
+            event.getHook().sendMessage("This currency does not exist, make sure to insert a value between `[money, tokens, gems]`").queue();
             return;
         }
 
@@ -293,7 +292,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         }
 
         if (provider.getBalance(returnFancyName(user.getId())) < wager) {
-            event.getHook().sendMessage("Sorry **" + playerName + "** but you **do not** have **enough " + provider.getInputName() + "** to create this coinflip!\n" +
+            event.getHook().sendMessage("Sorry **" + playerName + "** but you do not have **enough " + provider.getInputName() + "** to create this coinflip!\n" +
                     "Your current balance is: **" + ChatColor.stripColor(provider.format(provider.getBalance(playerName))) + "**").queue();
             return;
         }
@@ -317,7 +316,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
                 new PluginSlashCommand(this, new CommandData("bal", "Check your in-game balance!")),
 
                 new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
-                        .addOption(OptionType.INTEGER, "wager", "How much you want to bet?", true)
+                        .addOption(OptionType.INTEGER, "wager", "How much do you want to bet?", true)
                         .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true))
         ));
     }
