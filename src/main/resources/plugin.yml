@@ -3,6 +3,8 @@ main: me.staylords.sync.SyncPlugin
 version: ${project.version}-${git.commit.id.abbrev}/${git.branch}
 description: ${git.remote.origin.url}
 author: ${git.build.user.name}
+loadbefore:
+  - MedoraRobots
 softdepend:
   - DiscordSRV
 depend:

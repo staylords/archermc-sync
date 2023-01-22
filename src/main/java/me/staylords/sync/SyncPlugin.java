@@ -18,7 +18,6 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
-import github.scarsz.discordsrv.objects.managers.GroupSynchronizationManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
 import me.neznamy.tab.api.TabAPI;
 import me.neznamy.tab.api.TablistFormatManager;
@@ -36,6 +35,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import pl.jonspitfire.economyapi.types.Economy;
 
 import java.awt.*;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -90,30 +90,70 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
 
         //Bukkit
         new InitializeTask(this).runTaskTimerAsynchronously(this, 20L * 10, 20L * 10);
+
+        /*
+         * DiscordSRV uses an ancient JDA API which doesn't allow to use Models or correct JDA Command framework, so
+         * we double register all of our commands in order to make sure players can execute private messages commands.
+         */
+        /*
+         * DiscordSRV uses an ancient JDA API which doesn't allow to use Models or correct JDA Command framework, so
+         * we double register all of our commands in order to make sure players can execute private messages commands.
+         */
+        this.getSlashCommands().forEach(pluginSlashCommand -> DiscordUtil.getJda().updateCommands().addCommands(pluginSlashCommand.getCommandData()).queue());
+        DiscordUtil.getJda().updateCommands().queue();
+        DiscordUtil.getJda().upsertCommand(new CommandData("sync", "Link your Minecraft account to our Discord server!")
+                .addOption(OptionType.INTEGER, "code", "The code you received in-game.", true)).queue();
+        DiscordUtil.getJda().updateCommands().queue();
     }
 
+    public void check() {
+        TextChannel textChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(SYNC_CHANNEL);
+        List<MessageEmbed> embeds = new ArrayList<>();
+        if (textChannel == null) return;
+
+        MessageHistory history = MessageHistory.getHistoryFromBeginning(textChannel).complete();
+        history.getRetrievedHistory().forEach(message -> {
+            if (!message.getEmbeds().isEmpty()) {
+                embeds.addAll(message.getEmbeds());
+            }
+        });
+
+        if (embeds.isEmpty()) {
+            this.initialize();
+        }
+    }
     public void initialize() {
         TextChannel textChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(SYNC_CHANNEL);
+        if (textChannel == null) return;
 
-        if (textChannel != null) {
-            /*
-             * We fully delete messages and pins, so we prevent dupes and channel will look cleaner.
-             */
-            MessageHistory history = MessageHistory.getHistoryFromBeginning(textChannel).complete();
-            history.getRetrievedHistory().forEach(message -> {
-                if (message.isPinned())
-                    message.unpin().queue();
-                message.delete().queue();
-            });
+        textChannel.getHistory().retrievePast(100)
+                .queue(messages -> messages
+                        .stream()
+                        .filter(m -> m != null && !m.getEmbeds().isEmpty())
+                        .forEach(m -> m.getEmbeds()
+                                .stream()
+                                .filter(e -> e.getTitle() != null && e.getTitle().startsWith(BOT_TITLE))
+                                .forEach(e -> m.delete().queue())));
 
-            Button syncButton = Button.success("sync-account", "Link");
-            Button unsyncButton = Button.danger("unsync-account", "Unlink");
 
-            EmbedBuilder builder = new EmbedBuilder();
-            builder
-                    .setColor(new Color(255, 65, 65))
-                    .setTitle(BOT_TITLE)
-                    .addField("Hello there!",
+        /*
+         * We fully delete messages and pins, so we prevent dupes and channel will look cleaner.
+         */
+        MessageHistory history = MessageHistory.getHistoryFromBeginning(textChannel).complete();
+        history.getRetrievedHistory().forEach(message -> {
+            if (message.isPinned())
+                message.unpin().queue();
+            message.delete().queue();
+        });
+
+        Button syncButton = Button.success("sync-account", "Link");
+        Button unsyncButton = Button.danger("unsync-account", "Unlink");
+
+        EmbedBuilder builder = new EmbedBuilder();
+        builder
+                .setColor(new Color(255, 65, 65))
+                .setTitle(BOT_TITLE)
+                .addField("Hello there!",
                             "In order to **synchronize** your **in-game roles** and be able to access **our " +
                                     "features**, click the `Link` button and follow the **procedure**." +
                                     "\n" +
@@ -142,9 +182,6 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
             textChannel.getHistory().retrievePast(1)
                     .map(messages -> messages.get(0))
                     .queueAfter(3, TimeUnit.SECONDS, m -> m.pin().queue());
-        } else {
-            this.getLogger().warning("Channel cannot be found.");
-        }
     }
 
     @SlashCommand(path = "sync")
@@ -337,16 +374,11 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
      **/
     public void update(Player player) {
         AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
-        GroupSynchronizationManager synchronizationManager = DiscordSRV.getPlugin().getGroupSynchronizationManager();
         Member member = DiscordUtil.getMemberById(accountManager.getDiscordId(player.getUniqueId()));
         TablistFormatManager tablistFormatManager = TabAPI.getInstance().getTablistFormatManager();
 
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            DiscordUtil.setNickname(member,
-                    "[" +
-                            ChatColor.stripColor(synchronizationManager.getPermissions().getPrimaryGroup(player)) +
-                            "] " +
-                            player.getName());
+            DiscordUtil.setNickname(member, player.getName());
 
             if (player.isOnline()) {
                 tablistFormatManager.setSuffix(TabAPI.getInstance().getPlayer(player.getUniqueId()), " §a§l✓");
