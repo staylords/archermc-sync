@@ -154,7 +154,8 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         builder
                 .setColor(new Color(209, 62, 75))
                 .setTitle(BOT_TITLE)
-                .addField("In order to **link** your **in-game roles** and be able to access **our " +
+                .addField("ArcherMC In-Game to Discord Integration :link:",
+                        "In order to **link** your **in-game roles** and be able to access **our " +
                                     "features**, click the `Link` button and follow the **procedure**." +
                                     "\n" +
                                     " " +
