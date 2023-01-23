@@ -29,9 +29,9 @@ public class LinkCommand extends BaseCommand {
         if (player instanceof ConsoleCommandSender) return;
 
         if (SyncPlugin.isLinked(player.getUniqueId())) {
-            player.sendMessage("§9§m------------------------------------");
-            player.sendMessage("§cHello " + player.getName() + "! Your Minecraft account is already linked to " + returnFancyName(player.getUniqueId()) + ". If you wish to unlink it follow the steps in the #sync channel.");
-            player.sendMessage("§9§m------------------------------------");
+            player.sendMessage("§7§m---------------------------------------");
+            player.sendMessage("Your Minecraft account is already linked to " + returnFancyName(player.getUniqueId()) + ". If you wish to unlink it follow the steps in the #sync channel.");
+            player.sendMessage("§7§m---------------------------------------");
             return;
         }
 
@@ -46,13 +46,13 @@ public class LinkCommand extends BaseCommand {
 
         Bukkit.getScheduler().runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
             String[] toMessage = {
-                    "§9§m------------------------------------",
+                    "§7§m---------------------------------------",
                     "§c§lArcherMC Synchronization Process",
-                    "§c§l<§e!§c§l> §cDo not share your code with anyone §c§l<§e!§c§l>",
+                    "§c§l<§4!§c§l> §cDo not share your code with anyone §c§l<§4!§c§l>",
                     "",
-                    "§eHello §e§l" + player.getName() + "§e! Here's your 4 digits code: §e§l" + accountManager.generateCode(player.getUniqueId()) + "§e. ",
-                    "§eJoin discord.gg/archermc and follow the steps in the #sync channel in order to get your Minecraft account linked!",
-                    "§9§m------------------------------------"
+                    "§eHere's your 4 digits code: §e§l" + accountManager.generateCode(player.getUniqueId()) + "",
+                    "§eJoin discord.gg/archermc and follow the steps in the #sync channel in order to link your account!",
+                    "§7§m---------------------------------------"
             };
 
             player.sendMessage(toMessage);
@@ -69,4 +69,4 @@ public class LinkCommand extends BaseCommand {
         return DiscordUtil.getJda().getUserById(accountManager.getDiscordId(uuid)) == null ? accountManager.getDiscordId(uuid) : Objects.requireNonNull(DiscordUtil.getJda().getUserById(accountManager.getDiscordId(uuid))).getAsTag();
     }
 
-}
+}z
