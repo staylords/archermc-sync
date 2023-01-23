@@ -55,8 +55,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
         builder
                 .setColor(new Color(106, 255, 35))
                 .setTitle(SyncPlugin.BOT_TITLE)
-                .addField("Thank you for successfully linking your Minecraft account to the ArcherMC Discord!",
-                        "You have completed the verification process and synced your account."
+                .addField("You have completed the verification process and synced your account."
                                 + "\n", false)
                 .setThumbnail("https://mc-heads.net/avatar/" + event.getPlayer().getName())
                 .setImage("https://i.imgur.com/3dCjNA4.jpg")
@@ -67,14 +66,8 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 .queue();
 
         String[] messages = {
-                "",
-                "§9§m------------------------------------",
-                "§aThank you for successfully linking your Minecraft account to the ArcherMC Discord!",
-                "§7- §e(§c" + event.getPlayer().getName() + " §d-> " + user.getAsTag() + "§e)",
-                "",
-                "§eThis is what we got for you, §e§l" + event.getPlayer().getName() + "§e:",
-                " §5[§dVerified Role on Discord§7, §dVerified Tablist Suffix§7, §dAutomatic rank synchronization§7, §dIn-game coin flips through Discord... and much more coming real soon!§5]",
-                "§9§m------------------------------------"
+                "§aYou have successfully linked your discord account!",
+                "§7- §7(§c" + event.getPlayer().getName() + " §8-> §a" + user.getAsTag() + "§7)"
         };
 
         if (event.getPlayer() instanceof Player) {
@@ -94,10 +87,10 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
         EmbedBuilder builder = new EmbedBuilder();
         builder
-                .setColor(new Color(255, 211, 35))
+                .setColor(new Color(209, 62, 75))
                 .setTitle(SyncPlugin.BOT_TITLE)
                 .addField("Your account has been successfully unlinked.",
-                        "If you'd like to **link** it again, account simply click the `Link` button in the `#sync` channel."
+                        "If you'd like to **link** it again, simply click the `Link` button in the `#sync` channel."
                                 + "\n", false)
                 .setThumbnail("https://mc-heads.net/avatar/" + event.getPlayer().getName())
                 .setImage("https://i.imgur.com/3dCjNA4.jpg")
@@ -120,9 +113,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
         });
 
         String[] messages = {
-                "§9§m------------------------------------",
-                "§cYour account has been successfully unlinked.",
-                "§9§m------------------------------------"
+                "§aYou have successfully unlinked your discord account! §aUse §c§l/link §ato link your account."
         };
 
         if (event.getPlayer() instanceof Player) {
@@ -227,7 +218,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 return;
             }
 
-            event.getHook().sendMessage("Hello there! To create a coinflip execute `/cf [amount] [money/tokens/gems]`.").queue();
+            event.getHook().sendMessage("To create a coinflip type `/cf [amount] [money/tokens/gems]`").queue();
             return;
         }
 
@@ -237,7 +228,7 @@ public class GeneralJDAListeners extends ListenerAdapter {
                 return;
             }
 
-            event.getHook().sendMessage("Hello there! To check your in-balance execute `/bal`.").queue();
+            event.getHook().sendMessage("To check your server balance type `/bal`").queue();
             return;
         }
 
@@ -249,15 +240,13 @@ public class GeneralJDAListeners extends ListenerAdapter {
         if (event.getButton().getId().equalsIgnoreCase("sync-account")) {
             if (SyncPlugin.isLinked(user.getId())) {
                 event.getHook().sendMessageEmbeds(new EmbedBuilder()
-                        .setColor(new Color(255, 65, 65))
+                        .setColor(new Color(209, 62, 75))
                         .setTitle(SyncPlugin.BOT_TITLE)
-                        .addField("Hello " + event.getUser().getName() + "!",
-                                "Your discord account is already linked to " + SyncPlugin.returnFancyName(event.getUser().getId()) +
+                        .addField("Your discord account is already linked to " + SyncPlugin.returnFancyName(event.getUser().getId()) +
                                         "\n" +
                                         "" +
                                         "\n" +
-                                        "If you wish to unlink it simply click the `Unlink` button on the pinned message!", false)
-                        .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl())
+                                        "If you wish to unlink it, simply click the `Unlink` button on the pinned message!", false)
                         .build()).queue();
                 return;
             }
@@ -266,14 +255,13 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
             EmbedBuilder builder = new EmbedBuilder();
             builder
-                    .setColor(new Color(255, 65, 65))
+                    .setColor(new Color(209, 62, 75))
                     .setTitle(SyncPlugin.BOT_TITLE)
-                    .addField("Hello " + user.getName() + "!",
-                            "Connect to our server via `archermc.net` and run the command `/link`." +
+                    .addField("Connect to our server `archermc.net` and run the command `/link`." +
                                     "\n" +
                                     "" +
                                     "\n" +
-                                    "Once you have the **4 digits code** we generated for you **in-game**, please link your **account** by executing `/sync [****]` in this chat and you'll be **good to go**! :smile:",
+                                    "Once you have the **4 digits code** we generated for you **in-game**, please link your **account** by executing `/sync <code>` in this chat and you'll be **verified**!",
                             false)
                     .setThumbnail(event.getUser().getEffectiveAvatarUrl())
                     .setImage("https://i.imgur.com/3dCjNA4.jpg")
@@ -295,13 +283,11 @@ public class GeneralJDAListeners extends ListenerAdapter {
 
             EmbedBuilder builder = new EmbedBuilder();
             builder
-                    .setColor(new Color(255, 65, 65))
+                    .setColor(new Color(209, 62, 75))
                     .setTitle(SyncPlugin.BOT_TITLE)
-                    .addField("Hello " + SyncPlugin.returnFancyName(user.getId()) + "!\n",
-                            "In order to **unlink** your account, select an option down below.\nAre you really sure you want to do it?", false)
+                    .addField("In order to **unlink** your account, select an option down below.\nAre you really sure you want to do it?", false)
                     .setThumbnail("https://mc-heads.net/avatar/" + SyncPlugin.returnFancyName(event.getUser().getId()))
-                    .setImage("https://i.imgur.com/3dCjNA4.jpg")
-                    .setFooter(SyncPlugin.BOT_FOOTER, DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
+  
 
             Message message = new MessageBuilder()
                     .setEmbeds(builder.build())
