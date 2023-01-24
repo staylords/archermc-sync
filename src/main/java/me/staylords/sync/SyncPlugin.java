@@ -2,6 +2,7 @@ package me.staylords.sync;
 
 import co.aikar.commands.BukkitCommandManager;
 import fun.lewisdev.coinflip.DeluxeCoinflip;
+import fun.lewisdev.coinflip.config.Messages;
 import fun.lewisdev.coinflip.events.CoinflipCreatedEvent;
 import fun.lewisdev.coinflip.game.CoinflipGame;
 import fun.lewisdev.coinflip.player.PlayerManager;
@@ -15,6 +16,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.entities.*;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SlashCommandEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.OptionType;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.SubcommandData;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
@@ -308,6 +310,66 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         event.getHook().sendMessage("You successfully created a " + ChatColor.stripColor(provider.format(wager)) + " coinflip!").queue();
     }
 
+    @SlashCommand(path = "cf/cancel")
+    public void onCoinflipCancelCommand(SlashCommandEvent event) {
+        User user = event.getUser();
+
+        event.deferReply().setEphemeral(true).queue();
+
+        if (!SyncPlugin.isLinked(user.getId())) {
+            event.getHook().sendMessage("Your Minecraft account must be linked in order to execute this command.").queue();
+            return;
+        }
+
+        TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
+
+        if (!event.getChannel().getId().equals(channel.getId())) {
+            event.getHook().sendMessage("You can only execute this command in the `#coinflip` text channel.").queue();
+            return;
+        }
+
+        String playerName = returnFancyName(user.getId());
+        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+        PlayerManager playerManager = DeluxeCoinflip.getInstance().getPlayerManager();
+
+        //We found a coinflip game, so we delete it here now.
+        if (playerManager.getCurrentGames().containsKey(uuid)) {
+            CoinflipGame game = playerManager.getCurrentGames().get(uuid);
+            game.getProvider().deposit(uuid, (double) game.getAmount());
+            playerManager.getCurrentGames().remove(uuid);
+
+            event.getHook().sendMessage("You have successfully cancelled your ongoing coinflip game.").queue();
+
+            channel.getHistory().retrievePast(100)
+                    .queueAfter(1, TimeUnit.SECONDS, messages -> messages
+                            .stream()
+                            .filter(m -> m != null && !m.getEmbeds().isEmpty())
+                            .forEach(m -> m.getEmbeds()
+                                    .stream()
+                                    .filter(e -> e.getTitle() != null && e.getTitle().startsWith(playerName))
+                                    .forEach(e -> m.delete().queue())));
+        } else {
+            event.getHook().sendMessage("You do not have an active coinflip game.").queue();
+        }
+    }
+
+    @SlashCommand(path = "whois")
+    public void onWhoIsCommand(SlashCommandEvent event) {
+        User user = event.getUser();
+
+        event.deferReply().setEphemeral(true).queue();
+
+        User target = Objects.requireNonNull(event.getOption("user")).getAsUser();
+        if (!SyncPlugin.isLinked(target.getId())) {
+            event.getHook().sendMessage(target.getName() + "'s Minecraft account must be linked in order to execute this command.").queue();
+            return;
+        }
+
+        String targetName = returnFancyName(target.getId());
+
+        event.getHook().sendMessage(target.getName() + "'s Minecraft account is: " + targetName).queue();
+    }
+
     @Override
     public Set<PluginSlashCommand> getSlashCommands() {
         return new HashSet<>(Arrays.asList(
@@ -316,9 +378,13 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
 
                 new PluginSlashCommand(this, new CommandData("bal", "Check your in-game balance!")),
 
+                new PluginSlashCommand(this, new CommandData("whois", "Finds a user ign by their Discord!")
+                        .addOption(OptionType.USER, "user", "Discord username")),
+
                 new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
                         .addOption(OptionType.INTEGER, "wager", "How much do you want to bet?", true)
-                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true))
+                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true)
+                        .addSubcommands(new SubcommandData("cancel", "Cancels an ongoing coinflip.")))
         ));
     }
 
