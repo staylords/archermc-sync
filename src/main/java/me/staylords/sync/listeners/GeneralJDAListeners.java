@@ -202,6 +202,11 @@ public class GeneralJDAListeners extends ListenerAdapter {
                     if (loser.isOnline()) {
                         loser.getPlayer().sendMessage(CoinflipGUI.replacePlaceholders(Messages.GAME_SUMMARY_LOSS.toString(), String.valueOf(taxRate), provider.format(taxed), winner.getName(), loser.getName(), provider.getDisplay(), provider.getInputName(), provider.format(winAmount)));
                     }
+
+                    for (Player player2 : Bukkit.getServer().getOnlinePlayers()) {
+                        if (!playerManager.getPlayer(player2.getUniqueId()).isDisplayBroadcastMessages()) continue;
+                        player2.sendMessage(CoinflipGUI.replacePlaceholders(Messages.COINFLIP_BROADCAST.toString(), String.valueOf(taxRate), provider.format(taxed), winner.getName(), loser.getName(), provider.getDisplay(), provider.getInputName(), provider.format(winAmount)));
+                    }
                 });
 
                 event.getMessage().delete().queue();

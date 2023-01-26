@@ -310,7 +310,7 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
         event.getHook().sendMessage("You successfully created a " + ChatColor.stripColor(provider.format(wager)) + " coinflip!").queue();
     }
 
-    @SlashCommand(path = "cf/cancel")
+    @SlashCommand(path = "cfcancel")
     public void onCoinflipCancelCommand(SlashCommandEvent event) {
         User user = event.getUser();
 
@@ -383,8 +383,9 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
 
                 new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
                         .addOption(OptionType.INTEGER, "wager", "How much do you want to bet?", true)
-                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true)
-                        .addSubcommands(new SubcommandData("cancel", "Cancels an ongoing coinflip.")))
+                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true)),
+
+                new PluginSlashCommand(this, new CommandData("cfcancel", "Cancels an ongoing coinflip."))
         ));
     }
 

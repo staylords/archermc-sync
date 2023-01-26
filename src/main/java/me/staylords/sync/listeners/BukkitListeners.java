@@ -83,13 +83,12 @@ public class BukkitListeners implements Listener {
     public void onCoinflipCompletedEvent(CoinflipCompletedEvent event) {
         TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
 
-        String toReturn = "Game Summary | " +
-                WordUtils.capitalize(event.getProvider().getInputName() + " coinflip ") +
+        String toReturn = "[Game Summary] " +
+                WordUtils.capitalize(event.getProvider().getInputName() + " – coinflip ") +
                 "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() +
                 "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!";
 
-        DiscordUtil.queueMessage(channel, ChatColor.stripColor(toReturn));
-        Bukkit.broadcastMessage(toReturn);
+        DiscordUtil.queueMessage(channel, toReturn);
 
         /*
          * We try to delete the discord message even tho the coinflip was only interacted in-game.
