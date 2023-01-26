@@ -381,11 +381,11 @@ public class SyncPlugin extends JavaPlugin implements SlashCommandProvider {
                 new PluginSlashCommand(this, new CommandData("whois", "Finds a user ign by their Discord!")
                         .addOption(OptionType.USER, "user", "Discord username")),
 
+                new PluginSlashCommand(this, new CommandData("cfcancel", "Cancels an ongoing coinflip.")),
+
                 new PluginSlashCommand(this, new CommandData("cf", "Challenge your luck betting in-game currency through Discord!")
                         .addOption(OptionType.INTEGER, "wager", "How much do you want to bet?", true)
-                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true)),
-
-                new PluginSlashCommand(this, new CommandData("cfcancel", "Cancels an ongoing coinflip."))
+                        .addOption(OptionType.STRING, "currency", "Choose between money, tokens or gems!", true))
         ));
     }
 

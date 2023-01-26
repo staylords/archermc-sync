@@ -3,13 +3,18 @@ package me.staylords.sync.listeners;
 import fun.lewisdev.coinflip.events.CoinflipCompletedEvent;
 import fun.lewisdev.coinflip.events.CoinflipCreatedEvent;
 import fun.lewisdev.coinflip.game.CoinflipGame;
+import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.MessageBuilder;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.Member;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
+import github.scarsz.discordsrv.objects.managers.AccountLinkManager;
 import github.scarsz.discordsrv.util.DiscordUtil;
+import me.neznamy.tab.api.TabAPI;
+import me.neznamy.tab.api.TablistFormatManager;
 import me.staylords.sync.SyncPlugin;
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.Bukkit;
@@ -22,6 +27,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import pl.jonspitfire.economyapi.types.Economy;
 
 import java.awt.*;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -70,7 +76,7 @@ public class BukkitListeners implements Listener {
                 .addField("Value", ChatColor.stripColor(provider.format(game.getAmount())), true)
                 .addField("Currency", WordUtils.capitalize(provider.getInputName()), true)
                 .setThumbnail("https://mc-heads.net/avatar/" + game.getOfflinePlayer().getName())
-                .setFooter("Think luck is on your side? Face Fsayag in a coinflip!");
+                .setFooter("Think luck is on your side? Face " + game.getOfflinePlayer().getName() + " in a coinflip!");
 
         Message message = new MessageBuilder()
                 .setEmbeds(builder.build())
@@ -83,9 +89,7 @@ public class BukkitListeners implements Listener {
     public void onCoinflipCompletedEvent(CoinflipCompletedEvent event) {
         TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
 
-        String toReturn = "[Game Summary] " +
-                WordUtils.capitalize(event.getProvider().getInputName() + " – coinflip ") +
-                "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() +
+        String toReturn = "**" + returnFancyName(event.getWinner().getUniqueId()) + "** has defeated **" + returnFancyName(event.getLoser().getUniqueId()) +
                 "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!";
 
         DiscordUtil.queueMessage(channel, toReturn);
@@ -102,5 +106,14 @@ public class BukkitListeners implements Listener {
                                 .stream()
                                 .filter(e -> e.getTitle() != null && e.getTitle().startsWith(event.getAuthor().getName()))
                                 .forEach(e -> m.delete().queue())));
+    }
+
+    private String returnFancyName(UUID uuid) {
+        AccountLinkManager accountManager = DiscordSRV.getPlugin().getAccountLinkManager();
+        if (SyncPlugin.isLinked(uuid) && SyncPlugin.isInDiscord(uuid)) {
+            Member member = DiscordUtil.getMemberById(accountManager.getDiscordId(uuid));
+            return member.getAsMention();
+        }
+        return Bukkit.getOfflinePlayer(uuid).getName();
     }
 }
