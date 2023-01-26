@@ -12,6 +12,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.But
 import github.scarsz.discordsrv.util.DiscordUtil;
 import me.staylords.sync.SyncPlugin;
 import org.apache.commons.lang.WordUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,8 +22,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import pl.jonspitfire.economyapi.types.Economy;
 
 import java.awt.*;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -84,18 +83,13 @@ public class BukkitListeners implements Listener {
     public void onCoinflipCompletedEvent(CoinflipCompletedEvent event) {
         TextChannel channel = DiscordUtil.getTextChannelById(SyncPlugin.COIN_FLIP_CHANNEL);
 
-        EmbedBuilder builder = new EmbedBuilder();
-        builder
-                .setColor(new Color(255, 65, 65))
-                .setTitle("Game Summary")
-                .addField(WordUtils.capitalize(event.getProvider().getInputName() + " coinflip"), "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() + "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!", true)
-                .setFooter(new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Timestamp(System.currentTimeMillis())), DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl());
+        String toReturn = "Game Summary | " +
+                WordUtils.capitalize(event.getProvider().getInputName() + " coinflip ") +
+                "**" + event.getWinner().getName() + "** has defeated **" + event.getLoser().getName() +
+                "** in a **" + ChatColor.stripColor(event.getProvider().format(event.getWinnings())) + "** coinflip!";
 
-        Message message = new MessageBuilder()
-                .setEmbeds(builder.build())
-                .build();
-        DiscordUtil.queueMessage(channel, message);
-
+        DiscordUtil.queueMessage(channel, ChatColor.stripColor(toReturn));
+        Bukkit.broadcastMessage(toReturn);
 
         /*
          * We try to delete the discord message even tho the coinflip was only interacted in-game.
